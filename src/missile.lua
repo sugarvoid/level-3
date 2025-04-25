@@ -36,5 +36,5 @@ end
 
 function spawn_missile()
     local _m=missile:new()
-    add(all_missiles,_m)
+    add(all_missiles, _m)
 end

@@ -128,11 +128,17 @@ function draw_game()
         bo:draw()
     end
     line(0,111,128,111,0)
+    
+
+    rect(0, 128-17, 128, 128, 8)
+
+    draw_recticle()
+
     spr(21,recticle.x-5,104)
     spr(16,recticle.x-5,96)
     sspr(24,0,16,16,recticle.x,100)
 
-    draw_recticle()
+    
 
     print("hp",2,120,7)
     rectfill(10,120,10+health,124,11)
