@@ -15,10 +15,11 @@ end
 
 function boom:draw()
     if self.alive then
-        spr(25,self.x,self.y)
-        spr(25,self.x+8,self.y,1,1,true)
-        spr(25,self.x,self.y+8,1,1,false,true)
-        spr(25,self.x+8,self.y+8,1,1,true,true)
+        sspr(64,16,16,16,self.x,self.y)
+        --spr(25,self.x,self.y)
+        --spr(25,self.x+8,self.y,1,1,true)
+        --spr(25,self.x,self.y+8,1,1,false,true)
+        --spr(25,self.x+8,self.y+8,1,1,true,true)
     end
 end
 

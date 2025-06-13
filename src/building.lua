@@ -22,16 +22,19 @@ function building:draw()
     --todo: add smoke animation with low health
     --todo: lower building based on health
     --sspr(56,0,16,8,self.x-8,self.top)
-    line(self.x-8,self.y,self.x-8,self.y+40,4)
-    line(self.x+7,self.y,self.x+7,self.y+40,4)
+    --line(self.x-8,self.y,self.x-8,self.y+40,4)
+    --line(self.x+7,self.y,self.x+7,self.y+40,4)
 
-    for i=0,4 do
-       spr(37,self.x,self.y+(8*i))
-       spr(37,self.x-8,self.y+(8*i))
+    for i=0,self.health do
+       spr(37,self.x,103-(8*i))
+       spr(37,self.x-8,103-(8*i))
+       --spr(37,self.x,self.y+(8*i))
+       --spr(37,self.x-8,self.y+(8*i))
     end
 
     rect(self.x-8,self.y,self.x+7,self.y+2,5)
     print(self.health,self.x-2,self.y+4,0)
+    spr(38, self.x-4, self.y + (8 * self.health) + 1)
 end
 
 function building:update()
@@ -47,9 +50,9 @@ end
 
 function building:take_damage()
     health=mid(0,health-5, 30)
-    self.y += 5
+    self.y += 8
     if health == 0 then
-        goto_gameover("lose")
+        goto_gameover()
     end
     self.health=mid(0,self.health-1,4)
     if self.health==0 then
