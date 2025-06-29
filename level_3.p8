@@ -4,13 +4,428 @@ __lua__
 --level 3
 --by sugarvoid
 
-#include src/main.lua
-#include src/boom.lua
-#include src/recticle.lua
-#include src/missile.lua
-#include src/bullet.lua
-#include src/building.lua
+function _init()
+    g_state = 1
+    gameover_str = ""
+    start_delay = 60
+    palt(0, false)
+    palt(14, true)
+    poke(0x5f5c, 255)
+    all_missiles = {}
+    all_buildings = {}
+    all_bullets = {}
+    all_booms = {}
 
+    sec_left = 40
+    game_ticker = 0
+
+    health = 30
+    energy = 30
+    energy_max = 30
+    bullet_cost = 5
+    en_recharge_ticks = 0
+    next_en_rechage = 60
+
+    spawn_missile_ticks = 0
+    next_missile = 60
+    frames = 0
+
+    set_up_building(14)
+    set_up_building(39)
+    set_up_building(65)
+    set_up_building(90)
+    set_up_building(115)
+end
+
+function _update()
+    if g_state == 1 then
+        update_title()
+    elseif g_state == 2 then
+        update_game()
+    else
+        update_gameover()
+    end
+end
+
+function update_game()
+    frames += 1
+    game_ticker += 1
+    spawn_missile_ticks += 1
+    en_recharge_ticks += 1
+    if game_ticker >= 30 then
+        game_ticker = 0
+        sec_left -= 1
+        if sec_left == 0 then
+            goto_gameover(1)
+        end
+    end
+    if spawn_missile_ticks == next_missile then
+        spawn_missile()
+        spawn_missile_ticks = 0
+    end
+    if en_recharge_ticks == next_en_rechage then
+        recharge_en()
+        en_recharge_ticks = 0
+    end
+
+    if btnp(4) then
+        if energy >= bullet_cost then
+            sfx(0)
+            energy -= bullet_cost
+            shoot_bullet()
+        end
+    end
+
+    reticle:update()
+
+
+    foreach(all_bullets, function(obj) obj:update() end)
+    foreach(all_buildings, function(obj) obj:update() end)
+    foreach(all_missiles, function(obj) obj:update() end)
+    foreach(all_booms, function(obj) obj:update() end)
+end
+
+function update_title()
+    if btnp(5) then g_state = 2 end
+end
+
+function update_gameover()
+    if btnp(4) or btnp(5) then
+        _init()
+    end
+end
+
+function _draw()
+    if g_state == 1 then
+        draw_title()
+    elseif g_state == 2 then
+        draw_game()
+    else
+        draw_gameover()
+    end
+end
+
+function draw_game()
+    cls(12)
+    map()
+
+    if start_delay > 0 then
+
+    end
+
+    foreach(all_buildings, function(obj) obj:draw() end)
+    foreach(all_missiles, function(obj) obj:draw() end)
+    foreach(all_booms, function(obj) obj:draw() end)
+    foreach(all_bullets, function(obj) obj:draw() end)
+
+    line(0, 111, 128, 111, 0)
+
+    draw_reticle()
+
+    spr(21, reticle.x + 3, 104)
+    spr(16, reticle.x + 3, 96)
+    sspr(24, 0, 16, 16, reticle.x + 8, 100)
+
+    print("hp", 2, 120, 7)
+    rectfill(10, 120, 10 + health, 124, 11)
+    rect(10, 120, 10 + 30, 124, 7)
+
+    print("en", 64, 120, 7)
+    rectfill(64 + 8, 120, 64 + 8 + energy, 124, 12)
+    rect(64 + 8, 120, 64 + 8 + energy_max, 124, 7)
+
+    print(sec_left, 115, 120, 0)
+end
+
+function draw_title()
+    cls()
+    print("press [x] to play", 30, 60, 7)
+end
+
+function draw_gameover()
+    cls()
+    print(gameover_str, 0, 50, 4)
+end
+
+function check_gameover()
+    --
+    --[[
+loop through buildings and
+ see any health == 0
+ if so, go to game over
+ ]]
+end
+
+function is_colliding(a, b)
+    if ((b.x >= a.x + a.w) or
+            (b.x + b.w <= a.x) or
+            (b.y >= a.y + a.h) or
+            (b.y + b.h <= a.y)) then
+        return false
+    else
+        return true
+    end
+end
+
+function is_point_in_box(p, box)
+    if ((box.x >= p.x) or
+            (box.x <= p.x) or
+            (box.y >= p.y) or
+            (box.y <= p.y)) then
+        return false
+    else
+        return true
+    end
+end
+
+function recharge_en()
+    energy = mid(0, energy + bullet_cost, energy_max)
+end
+
+function goto_gameover(con)
+    if con then
+        gameover_str = "you saved the city\ncool"
+    else
+        sfx(1)
+        gameover_str = "the city has fallen"
+    end
+
+    g_state = 3
+end
+
+
+
+-->8
+--missile
+missile={}
+missile.__index=missile
+
+local pos={4,6,10,12,14,28,30,32,34,36,54,56,58,60,78,80,82,84,106,108,112,116}
+
+function missile:new()
+    local m=setmetatable({},missile)
+    m.anmi_t=0
+    m.y=0
+    m.x=rnd(pos)
+    m.tip={x=0,y=0,w=2,h=1}
+    m.body={x=0,y=0,w=3,h=8}
+    m.launched=false
+    return m
+end
+
+function missile:draw()
+    spr(5+self.anmi_t%15\7.5,self.x,self.y)
+    spr(7,self.x,self.y+8)
+end
+
+function missile:update()
+    self.y+=0.4
+    self.anmi_t+=1
+    self.body.x=self.x+2
+    self.body.y=self.y+7
+    self.tip.y=self.y+15
+    self.tip.x=self.x+3
+end
+
+function spawn_missile()
+    local _m=missile:new()
+    add(all_missiles, _m)
+end
+
+-->8
+--bullet
+bullet = {}
+bullet.__index = bullet
+
+local start_y = 100
+
+function shoot_bullet()
+    local _b = setmetatable({}, bullet)
+    _b.active = false
+    _b.img = 22
+    _b.end_y = reticle.y + 8
+    _b.halfway = start_y + (_b.end_y - start_y) * 0.5
+    _b.three_quat = ceil(start_y + (_b.end_y - start_y) * 0.75)
+    _b.y = start_y
+    _b.life = 10
+    _b.ignited = false
+    _b.x = reticle.x + 8
+    _b.starting_size = 5
+    _b.hitbox = { x = 0, y = 0, h = 18, w = 18 }
+    _b.size = 8
+    _b.ticker = 0
+    _b.peek_y = 0
+    add(all_bullets, _b)
+end
+
+function bullet:draw()
+    if not self.ignited then
+        spr(self.img, self.x - 4, self.y - 4)
+    end
+end
+
+function bullet:update()
+    if not self.ignited then
+        self.y -= 2
+    end
+
+    self.ticker += 1
+    self.hitbox.x = self.x - 9
+    self.hitbox.y = self.y - 9
+    if self.ticker == 20 then
+        self.ticker = 0
+    end
+
+    if self.y <= self.halfway and self.y >= self.three_quat then
+        -- Change sprite at halfway point
+        self.img = 23
+    elseif self.y <= self.three_quat then
+        -- Change sprite at 3/4ths point
+        self.img = 24
+    else
+        -- Default sprite
+        self.img = 22
+    end
+
+    for m in all(all_missiles) do
+        if is_colliding(self.hitbox, m.body) and self.ignited then
+            del(all_missiles, m)
+        end
+    end
+
+    if self.y <= self.end_y then
+        self.ignited = true
+        add_boom_sfx(self.x - 8, self.y - 8)
+    end
+
+    if self.ignited then
+        self.life -= 1
+        if self.life == 0 then
+            del(all_bullets, self)
+        end
+    end
+end
+
+
+-->8
+--reticle
+reticle = {
+    x = 20,
+    y = 20,
+    update = function(self)
+        if btn(⬆️) then self.y = mid(0, self.y - 2, 90) end
+        if btn(⬇️) then self.y = mid(0, self.y + 2, 90) end
+        if btn(⬅️) then
+            self.x = mid(0, self.x - 2, 110)
+            sfx(4)
+        end
+        if btn(➡️) then
+            self.x = mid(0, self.x + 2, 110)
+            sfx(4)
+        end
+    end,
+}
+
+function draw_reticle()
+    spr(1, reticle.x, reticle.y)
+    spr(1, reticle.x + 8, reticle.y, 1, 1, true)
+    spr(1, reticle.x, reticle.y + 8, 1, 1, false, true)
+    spr(1, reticle.x + 8, reticle.y + 8, 1, 1, true, true)
+end
+
+-->8
+--boom sfx
+
+boom={}
+boom.__index=boom
+
+function add_boom_sfx(x,y)
+    local _b=setmetatable({},boom)
+    _b.y=y
+    _b.x=x
+    _b.alive=true
+    _b.timer=15
+    sfx(2)
+    add(all_booms,_b)
+end
+
+function boom:draw()
+    if self.alive then
+        sspr(64,16,16,16,self.x,self.y)
+    end
+end
+
+function boom:update()
+
+    if self.alive then
+        self.timer-=1
+    end
+    if self.timer==0 then
+        del(all_booms,self)
+    end
+end
+
+-->8
+--building
+
+building={}
+building.__index=building
+
+function set_up_building(x)
+    local _b=setmetatable({},building)
+    _b.health=4
+    _b.y=70
+    _b.x=x
+    _b.top=70
+    _b.fallen=false
+    _b.hitbox={
+        x=_b.x-8,
+        y=_b.y,
+        w=15,
+        h=2,
+    }
+    add(all_buildings,_b)
+end
+
+function building:draw()
+    --todo: add smoke animation with low health
+    --todo: lower building based on health
+    for i=0,self.health do
+       spr(37,self.x,103-(8*i))
+       spr(37,self.x-8,103-(8*i))
+    end
+
+    rect(self.x-8,self.y,self.x+7,self.y+2,5)
+    print(self.health,self.x-2,self.y+4,0)
+    spr(38, self.x-4, self.y + (8 * self.health) + 1)
+end
+
+function building:update()
+    for m in all(all_missiles) do
+        if is_colliding(self.hitbox, m.tip) then
+            del(all_missiles, m)
+            self:take_damage()
+            
+            sfx(3)
+        end
+    end
+end
+
+function building:take_damage()
+    health=mid(0,health-5, 30)
+    self.y += 8
+    if health == 0 then
+        goto_gameover()
+    end
+    self.health=mid(0,self.health-1,4)
+    if self.health==0 then
+        sfx(1)
+    end
+end
+
+function building:check_if_hit(m)
+    return is_point_in_box({x=m.x+4,y=m.y+15},self.hitbox)
+end
 
 __gfx__
 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee5555eeeeeeeeee8eee8eeeeeeeeee80000000000080000000000000000000000000000
