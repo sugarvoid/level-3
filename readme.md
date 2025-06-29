@@ -1,8 +1,6 @@
 # Level 3
 <br>
 
-## [Play in browser](https://sugarvoid.itch.io/level-3?password=game)
-
 ![gameplay](https://github.com/sugarvoid/level-3/blob/master/gameplay.gif)
 <br>
 
@@ -19,5 +17,4 @@
 | :----:        | :--------: |
 | Up/Down       |    Move Reticle    |
 | Left/Right    |    Move Truck   |
-|   O           | Throw Mail |
-|   X           | Swap Color |
+|   O           | Shoot Mail |
