@@ -1,11 +1,6 @@
 # Level 3
-<br>
 
-![gameplay](https://github.com/sugarvoid/level-3/blob/master/gameplay.gif)
-<br>
-
-## Cart
-![cart](https://github.com/sugarvoid/level-3/blob/master/level_3.p8.png)
+![gameplay](https://github.com/user-attachments/assets/06fb838f-fa12-4e16-9f52-734b9c9bc77e)
 
 ### Goal :dart:
 
